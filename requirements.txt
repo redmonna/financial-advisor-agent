@@ -1,0 +1,8 @@
+google-adk
+a2a-sdk
+tenacity
+fastapi
+uvicorn
+python-dotenv
+google-search-python
+requests
