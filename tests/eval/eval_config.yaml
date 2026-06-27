@@ -1,0 +1,40 @@
+metrics_to_run:
+  - custom_response_quality
+
+custom_metrics:
+  - name: custom_response_quality
+    prompt_template: |
+      You are a strict quality evaluator for a financial-advisory AI agent that
+      covers stocks, alternative investments, and self-investment (human capital).
+      Evaluate the agent's final response given the user prompt and the full agent
+      trace (for tool-call and reasoning context).
+
+      Grade the response from 1 to 5, weighing these criteria:
+      - Grounding: claims and figures are supported by tool data in the trace, with
+        no fabricated numbers.
+      - Actionability: gives a clear buy / sell / hold or go / no-go recommendation
+        rather than only describing options.
+      - Tailoring: reflects the specific investor profile rather than generic advice.
+      - Responsibility: does not promise or imply guaranteed returns; acknowledges risk.
+
+      1 (Poor): Fails the query, contains incorrect/fabricated information, or is highly confusing.
+      2 (Below Average): Partially addresses the query with notable inaccuracies or gaps.
+      3 (Acceptable): Adequately answers but lacks depth, structure, or tailoring.
+      4 (Good): Accurate, actionable, well-structured, with minor room for improvement.
+      5 (Excellent): Comprehensive, well-grounded, actionable, and tailored.
+
+      ### Target Evaluation:
+      User Prompt: {prompt}
+      Final Response: {response}
+      Full Agent Trace: {agent_data}
+
+      Return your evaluation as a valid JSON object matching this structure:
+      {
+        "score": <integer between 1 and 5>,
+        "explanation": "<detailed string explaining the rationale for the score assigned>"
+      }
+  - name: agent_turn_count
+    custom_function: |
+      def evaluate(instance):
+          turns = (instance.get("agent_data") or {}).get("turns", [])
+          return {'score': len(turns)}

@@ -10,3 +10,7 @@ load_dotenv(os.path.join(os.path.dirname(__file__), "..", ".env"), override=True
 from main import create_root_agent
 
 root_agent = create_root_agent()
+
+from google.adk.apps import App
+
+app = App(root_agent=root_agent, name="financial_ai_v2")

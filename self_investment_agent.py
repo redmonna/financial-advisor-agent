@@ -1,7 +1,8 @@
 from google.adk.agents import LlmAgent
 import os
 import requests
-from tenacity import retry, stop_after_attempt, wait_exponential_jitter
+from requests.exceptions import HTTPError
+from tenacity import retry, retry_if_exception, stop_after_attempt, wait_exponential_jitter
 
 
 BLS_BASE_URL = "https://api.bls.gov/publicAPI/v2/timeseries/data/"
@@ -28,7 +29,12 @@ def _get_onet_key():
     return os.getenv("ONET_API_KEY")
 
 
-@retry(stop=stop_after_attempt(3), wait=wait_exponential_jitter(initial=3, max=60), reraise=True)
+def _is_retryable(e: BaseException) -> bool:
+    """Don't retry 4xx client errors — they won't succeed on retry."""
+    return not (isinstance(e, HTTPError) and e.response is not None and 400 <= e.response.status_code < 500)
+
+
+@retry(stop=stop_after_attempt(3), wait=wait_exponential_jitter(initial=3, max=60), retry=retry_if_exception(_is_retryable), reraise=True)
 def _bls_request(series_ids: list, start_year: int = 2020, end_year: int = 2026) -> dict:
     payload = {
         "seriesid": series_ids,
@@ -41,7 +47,7 @@ def _bls_request(series_ids: list, start_year: int = 2020, end_year: int = 2026)
     return response.json()
 
 
-@retry(stop=stop_after_attempt(3), wait=wait_exponential_jitter(initial=3, max=60), reraise=True)
+@retry(stop=stop_after_attempt(3), wait=wait_exponential_jitter(initial=3, max=60), retry=retry_if_exception(_is_retryable), reraise=True)
 def _fred_request(series_id: str, limit: int = 24) -> dict:
     params = {
         "series_id": series_id,
@@ -55,7 +61,7 @@ def _fred_request(series_id: str, limit: int = 24) -> dict:
     return response.json()
 
 
-@retry(stop=stop_after_attempt(3), wait=wait_exponential_jitter(initial=3, max=60), reraise=True)
+@retry(stop=stop_after_attempt(3), wait=wait_exponential_jitter(initial=3, max=60), retry=retry_if_exception(_is_retryable), reraise=True)
 def _onet_request(endpoint: str, params: dict = None) -> dict:
     key = _get_onet_key()
     if not key:
@@ -88,7 +94,10 @@ def bls_occupation_wages(occupation_code: str) -> dict:
         "90th": "05",
     }
     series_ids = [f"OEUM003{soc_clean}00000000{code}13" for code in percentile_codes.values()]
-    result = _bls_request(series_ids)
+    try:
+        result = _bls_request(series_ids)
+    except Exception as e:
+        return {"error": f"BLS API error for occupation '{occupation_code}': {e}"}
     # Map results back to percentile labels
     output = {"occupation_code": occupation_code, "wages_by_percentile": {}}
     if result.get("status") == "REQUEST_SUCCEEDED":
@@ -109,7 +118,10 @@ def bls_occupation_outlook(occupation_code: str) -> dict:
     # Employment projections series: prefix=LNU, but let's use the occupation employment series
     # Total employment series for an occupation
     series_ids = [f"CEU0000000001"]  # Total nonfarm employment as baseline
-    result = _bls_request(series_ids)
+    try:
+        result = _bls_request(series_ids)
+    except Exception as e:
+        return {"error": f"BLS API error for occupation outlook '{occupation_code}': {e}"}
     # For projections, we return the BLS data and context
     return {
         "occupation_code": occupation_code,
@@ -130,7 +142,10 @@ def fred_education_economics(series_id: str) -> dict:
     - MEPAINUSA672N: Real median personal income in the US ($)
     - A792RC0Q052SBEA: Personal income per capita ($)
     Returns the most recent 24 observations for the given series."""
-    return _fred_request(series_id)
+    try:
+        return _fred_request(series_id)
+    except Exception as e:
+        return {"error": f"FRED API error for series '{series_id}': {e}"}
 
 
 # --- O*NET Skills Tools ---
@@ -144,9 +159,18 @@ def onet_occupation_skills(occupation_code: str) -> dict:
     if not key:
         return {"error": "O*NET API key not configured. Register at services.onetcenter.org and add ONET_API_KEY to .env"}
 
-    skills = _onet_request(f"online/occupations/{occupation_code}/details/skills", params={"sort": "importance"})
-    tech_skills = _onet_request(f"online/occupations/{occupation_code}/details/technology_skills")
-    knowledge = _onet_request(f"online/occupations/{occupation_code}/details/knowledge", params={"sort": "importance"})
+    try:
+        skills = _onet_request(f"online/occupations/{occupation_code}/details/skills", params={"sort": "importance"})
+    except Exception as e:
+        skills = {"error": f"O*NET skills API error: {e}"}
+    try:
+        tech_skills = _onet_request(f"online/occupations/{occupation_code}/details/technology_skills")
+    except Exception as e:
+        tech_skills = {"error": f"O*NET tech skills API error: {e}"}
+    try:
+        knowledge = _onet_request(f"online/occupations/{occupation_code}/details/knowledge", params={"sort": "importance"})
+    except Exception as e:
+        knowledge = {"error": f"O*NET knowledge API error: {e}"}
 
     return {
         "occupation_code": occupation_code,
@@ -164,7 +188,10 @@ def onet_bright_outlook_occupations(keyword: str) -> dict:
     if not key:
         return {"error": "O*NET API key not configured. Register at services.onetcenter.org and add ONET_API_KEY to .env"}
 
-    result = _onet_request("online/search", params={"keyword": keyword, "end": 20})
+    try:
+        result = _onet_request("online/search", params={"keyword": keyword, "end": 20})
+    except Exception as e:
+        return {"error": f"O*NET search API error for keyword '{keyword}': {e}"}
     # Filter for bright outlook if available
     occupations = result.get("occupation", result)
     return {

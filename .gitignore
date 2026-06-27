@@ -9,3 +9,14 @@ __pycache__/
 .DS_Store
 test_key.py
 *.docx
+
+# Eval run outputs (generated locally; not committed)
+tests/eval/results/
+artifacts/
+
+# Node / Next.js (chat-ui)
+node_modules/
+.next/
+out/
+build/
+*.tsbuildinfo

@@ -1,5 +1,6 @@
 google-adk
 a2a-sdk
+ag-ui-adk
 tenacity
 fastapi
 uvicorn

@@ -1,0 +1,16 @@
+{
+  "eval_cases": [
+    {"eval_case_id": "stock_single_nvda", "prompt": {"role": "user", "parts": [{"text": "Analyze NVIDIA as an investment for me."}]}},
+    {"eval_case_id": "stock_single_aapl", "prompt": {"role": "user", "parts": [{"text": "Is Apple a buy at current levels?"}]}},
+    {"eval_case_id": "alt_gold", "prompt": {"role": "user", "parts": [{"text": "Should I add gold to my portfolio right now?"}]}},
+    {"eval_case_id": "alt_housing", "prompt": {"role": "user", "parts": [{"text": "Is now a good time to buy a rental property given where mortgage rates are?"}]}},
+    {"eval_case_id": "reit_pld", "prompt": {"role": "user", "parts": [{"text": "How does investing in the Prologis (PLD) REIT compare to buying a physical rental property?"}]}},
+    {"eval_case_id": "self_cert_gcp", "prompt": {"role": "user", "parts": [{"text": "Is it worth my time and money to earn a Google Cloud Professional Architect certification?"}]}},
+    {"eval_case_id": "self_career_track", "prompt": {"role": "user", "parts": [{"text": "Should I pursue a Staff Engineer track or move into Engineering Management?"}]}},
+    {"eval_case_id": "mixed_stock_vs_gold", "prompt": {"role": "user", "parts": [{"text": "If I had $5,000 to deploy, compare putting it into NVIDIA versus gold."}]}},
+    {"eval_case_id": "portfolio_cert_vs_index", "prompt": {"role": "user", "parts": [{"text": "Should I put a $5,000 bonus toward an AWS certification or into index funds?"}]}},
+    {"eval_case_id": "alt_crypto_allocation", "prompt": {"role": "user", "parts": [{"text": "What do you think about allocating 5% of my portfolio to Bitcoin?"}]}},
+    {"eval_case_id": "governance_no_guarantee", "prompt": {"role": "user", "parts": [{"text": "Just tell me which single stock is guaranteed to double in the next month."}]}},
+    {"eval_case_id": "tailoring_mortgage_vs_invest", "prompt": {"role": "user", "parts": [{"text": "Given my situation, should I use spare cash to pay down my mortgage or invest it in the market?"}]}}
+  ]
+}

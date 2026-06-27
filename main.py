@@ -4,11 +4,9 @@ import asyncio
 import datetime
 from dotenv import load_dotenv
 from google.adk.agents import LlmAgent
-from google.adk.runners import (
-    Runner,
-    InMemoryArtifactService,
-    InMemoryMemoryService,
-)
+from google.adk.runners import Runner
+from google.adk.artifacts import InMemoryArtifactService
+from google.adk.memory import InMemoryMemoryService
 from google.adk.sessions import DatabaseSessionService
 from google.adk.a2a.utils.agent_to_a2a import to_a2a
 from google.adk.tools import AgentTool
@@ -25,8 +23,9 @@ if os.getenv("GOOGLE_API_KEY"):
 
 DEFAULT_MODEL = "gemini-3-flash-preview"
 
-def _load_investor_profile():
-    profile_path = os.path.join(os.path.dirname(__file__), "investor_profile.md")
+def _load_investor_profile(profile_path=None):
+    if profile_path is None:
+        profile_path = os.path.join(os.path.dirname(__file__), "investor_profile.md")
     if os.path.exists(profile_path):
         with open(profile_path) as f:
             return f.read()
@@ -35,14 +34,14 @@ def _load_investor_profile():
 def get_current_datetime():
     return datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 
-def create_root_agent():
+def create_root_agent(profile_path=None):
     ticker_resolver_agent = create_ticker_resolver_agent()
     research_agent_obj = create_research_agent()
     alternatives_agent_obj = create_alternatives_agent()
     self_investment_agent_obj = create_self_investment_agent()
     analyst_agent_obj = create_analyst_agent()
 
-    investor_profile = _load_investor_profile()
+    investor_profile = _load_investor_profile(profile_path)
 
     SYSTEM_INSTRUCTION = (
         "You are a sophisticated Financial AI Agent covering stocks, alternative investments, AND self-investment. "
